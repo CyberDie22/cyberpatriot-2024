@@ -1,0 +1,325 @@
+[
+    {
+        "name": "Ensure GPG keys are configured",
+        "id": "1.2.1.1",
+        "type": "Manual",
+        "start_page": 127,
+        "end_page": 128,
+        "profiles": [
+            "level-1-server",
+            "level-1-workstation"
+        ],
+        "description": "Most package managers implement GPG key signing to verify package integrity during installation.",
+        "rationale": "It is important to ensure that updates are obtained from a valid source to protect against spoofing that could lead to the inadvertent installation of malware on the system.",
+        "audit_details": "Verify GPG keys are configured correctly for your package manager:\n\n```\n# apt-key list\n```\n",
+        "audit_code": "# apt-key list",
+        "remediation_details": "Update your package manager GPG keys in accordance with site policy.",
+        "remediation_code": ""
+    },
+    {
+        "name": "Ensure package manager repositories are configured",
+        "id": "1.2.1.2",
+        "type": "Manual",
+        "start_page": 129,
+        "end_page": 130,
+        "profiles": [
+            "level-1-server",
+            "level-1-workstation"
+        ],
+        "description": "Systems need to have package manager repositories configured to ensure they receive the latest patches and updates.",
+        "rationale": "If a system's package repositories are misconfigured important patches may not be identified or a rogue repository could introduce compromised software.",
+        "audit_details": "Run the following command and verify package repositories are configured correctly:\n\n```\n# apt-cache policy\n```\n",
+        "audit_code": "# apt-cache policy",
+        "remediation_details": "Configure your package manager repositories according to site policy.",
+        "remediation_code": "Configure your package manager repositories according to site policy."
+    },
+    {
+        "name": "Ensure updates, patches, and additional security software are installed",
+        "id": "1.2.2.1",
+        "type": "Manual",
+        "start_page": 132,
+        "end_page": 134,
+        "profiles": [
+            "level-1-server",
+            "level-1-workstation"
+        ],
+        "description": "Periodically patches are released for included software either due to security flaws or to include additional functionality.",
+        "rationale": "Newer patches may contain security enhancements that would not be available through the latest full update. As a result, it is recommended that the latest software patches be used to take advantage of the latest functionality. As with any software installation, organizations need to determine if a given update meets their requirements and verify the compatibility and supportability of any additional software against the update revision that is selected.",
+        "audit_details": "Verify there are no updates or patches to install:\n```\n# apt update\n# apt -s upgrade\n```\n",
+        "audit_code": "# apt update\n# apt -s upgrade",
+        "remediation_details": "Run the following command to update all packages following local site policy guidance on applying updates and patches:\n```\n# apt update\n# apt upgrade\n- OR # apt dist-upgrade\n```\n",
+        "remediation_code": "# apt update\n# apt upgrade\n- OR # apt dist-upgrade"
+    },
+    {
+        "name": "Ensure only approved services are listening on a network interface",
+        "id": "2.1.22",
+        "type": "Manual",
+        "start_page": 282,
+        "end_page": 284,
+        "profiles": [
+            "level-1-server",
+            "level-1-workstation"
+        ],
+        "description": "A network port is identified by its number, the associated IP address, and the type of the communication protocol such as TCP or UDP.\n\nA listening port is a network port on which an application or process listens on, acting as a communication endpoint.\n\nEach listening port can be open or closed (filtered) using a firewall. In general terms, an open port is a network port that accepts incoming packets from remote locations.",
+        "rationale": "Services listening on the system pose a potential risk as an attack vector. These services should be reviewed, and if not required, the service should be stopped, and the package containing the service should be removed. If required packages have a dependency, the service should be stopped and masked to reduce the attack surface of the system.",
+        "audit_details": "Run the following command:\n\n```\n# ss -plntu\n```\n\nReview the output to ensure:\n  - All services listed are required on the system and approved by local site policy.\n  - Both the port and interface the service is listening on are approved by local site policy.\n  - If a listed service is not required:\n\n`o` Remove the package containing the service\n`o` **- IF - the service's package is required for a dependency, stop and mask** the service and/or socket",
+        "audit_code": "# ss -plntu",
+        "remediation_details": "Run the following commands to stop the service and remove the package containing the service:\n```\n# systemctl stop <service_name>.socket <service_name>.service\n# apt purge <package_name>\n```\n**- OR - If required packages have a dependency:**\nRun the following commands to stop and mask the service and socket:\n```\n# systemctl stop <service_name>.socket <service_name>.service\n# systemctl mask <service_name>.socket <service_name>.service\n```\n**Note: replace <service_name> with the appropriate service name.**",
+        "remediation_code": "# systemctl stop <service_name>.socket <service_name>.service\n# apt purge <package_name>\n# systemctl stop <service_name>.socket <service_name>.service\n# systemctl mask <service_name>.socket <service_name>.service\n"
+    },
+    {
+        "name": "Ensure systemd-timesyncd is enabled and running",
+        "id": "2.3.2.2",
+        "type": "Manual",
+        "start_page": 310,
+        "end_page": 311,
+        "profiles": [
+            "level-1-server",
+            "level-1-workstation"
+        ],
+        "description": "systemd-timesyncd is a daemon that has been added for synchronizing the system clock across the network",
+        "rationale": "systemd-timesyncd needs to be enabled and running in order to synchronize the system to a timeserver.\n\nTime synchronization is important to support time sensitive security mechanisms and to ensure log files have consistent time records across the enterprise to aid in forensic investigations",
+        "audit_details": "**- IF - systemd-timesyncd is in use on the system, run the following commands:**\nRun the following command to verify that the systemd-timesyncd service is enabled:\n```\n# systemctl is-enabled systemd-timesyncd.service\nenabled\n```\nRun the following command to verify that the systemd-timesyncd service is active:\n```\n# systemctl is-active systemd-timesyncd.service\nactive\n```",
+        "audit_code": "# systemctl is-enabled systemd-timesyncd.service\nenabled\n# systemctl is-active systemd-timesyncd.service\nactive",
+        "remediation_details": "**- IF -** `systemd-timesyncd is in use on the system, run the following commands:`\nRun the following command to unmask systemd-timesyncd.service:\n```\n# systemctl unmask systemd-timesyncd.service\n```\nRun the following command to enable and start systemd-timesyncd.service:\n```\n# systemctl --now enable systemd-timesyncd.service\n```\n\n**- OR -**\nIf another time synchronization service is in use on the system, run the following command to stop and mask systemd-timesyncd:\n```\n# systemctl --now mask systemd-timesyncd.service\n```",
+        "remediation_code": "# systemctl unmask systemd-timesyncd.service\n# systemctl --now enable systemd-timesyncd.service\n# systemctl --now mask systemd-timesyncd.service"
+    },
+    {
+        "name": "Ensure chrony is configured with authorized timeserver",
+        "id": "2.3.3.1",
+        "type": "Manual",
+        "start_page": 313,
+        "end_page": 316,
+        "profiles": [
+            "level-1-server",
+            "level-1-workstation"
+        ],
+        "description": "- server\n`o` The server directive specifies an NTP server which can be used as a time source. The client-server relationship is strictly hierarchical: a client might synchronize its system time to that of the server, but the server\u2019s system time will never be influenced by that of a client.\n\n`o` This directive can be used multiple times to specify multiple servers.\n`o` The directive is immediately followed by either the name of the server, or its IP address.\n\n- pool\n`o` The syntax of this directive is similar to that for the server directive, except that it is used to specify a pool of NTP servers rather than a single NTP server. The pool name is expected to resolve to multiple addresses which might change over time.\n\n`o` This directive can be used multiple times to specify multiple pools.\n`o` All options valid in the server directive can be used in this directive too.",
+        "rationale": "Time synchronization is important to support time sensitive security mechanisms and to ensure log files have consistent time records across the enterprise to aid in forensic investigations",
+        "audit_details": "IF chrony is in use on the system, run the following script to ensure chrony is configured with authorized timeserver: \n```bash\n#!/usr/bin/env bash\n{\n  l_output=\"\"\n  l_output2=\"\"\n  a_parlist=(\"^\\h*(server|pool)\\h+\\H+\")\n  l_chrony_config_dir=\"/etc/chrony\" # Chrony configuration directory\n  config_file_parameter_chk() {\n    unset A_out\n    declare -A A_out\n    while read -r l_out; do\n      if [ -n \"$l_out\" ]; then\n        if [[ $l_out =~ ^\\s*# ]]; then\n          l_file=\"${l_out//# /}\"\n        else\n          l_chrony_parameter=\"$(awk -F= '{print $1}' <<< \"$l_out\" | xargs)\"\n          A_out+=( [\"$l_chrony_parameter\"]=\"$l_file\")\n        fi\n      fi\n    done < <(find \"$l_chrony_config_dir\" -name '*.conf' -exec systemdanalyze cat-config {} + | grep -Pio '^\\h*([^#\\n\\r]+|#\\h*\\/[^#\\n\\r\\h]+\\.conf\\b)')\n    if (( ${#A_out[@]} > 0 )); then\n      for l_chrony_parameter in \"${!A_out[@]}\"; do\n        l_file=\"${A_out[$l_chrony_parameter]}\"\n        l_output=\"$l_output\\n - \\\"$l_chrony_parameter\\\" is set in \\\"$l_file\\\"\\n\"\n      done\n    else\n      l_output2=\"$l_output2\\n - No 'server' or 'pool' settings found in Chrony configuration files\\n\"\n    fi\n  }\n  for l_chrony_parameter_regex in \"${a_parlist[@]}\"; do\n    config_file_parameter_chk\n  done\n  if [ -z \"$l_output2\" ]; then\n    echo -e \"\\n- Audit Result:\\n ** PASS **\\n$l_output\\n\"\n  else\n    echo -e \"\\n- Audit Result:\\n ** FAIL **\\n - Reason(s) for audit failure:\\n$l_output2\\n\"\n    [ -n \"$l_output\" ] && echo -e \"\\n- Correctly set:\\n$l_output\\n\"\n  fi\n}\n```",
+        "audit_code": "#!/usr/bin/env bash\n{\n  l_output=\"\"\n  ... \n  # Remaining script omitted for brevity\n}",
+        "remediation_details": "Edit /etc/chrony/chrony.conf or a file ending in .sources in /etc/chrony/sources.d/ and add or edit server or pool lines as appropriate according to local site policy:\n\n```\n<[server|pool]> <[remote-server|remote-pool]>\n```\n\n_Examples:_\n```\npool directive:\npool time.nist.gov iburst maxsources 4 #The maxsources option is unique to the pool directive\nserver directive:\nserver time-a-g.nist.gov iburst\nserver 132.163.97.3 iburst\nserver time-d-b.nist.gov iburst\n```\nRun one of the following commands to load the updated time sources into chronyd running config:\n```\n# systemctl restart chronyd\n- OR if sources are in a .sources file # chronyc reload sources\n```\n**- OR -** If another time synchronization service is in use on the system, run the following command to remove chrony from the system:\n```\n# apt purge chrony\n# apt autoremove chrony\n```\n**References:**\n1. chrony.conf(5) Manual Page\n2. [https://tf.nist.gov/tf-cgi/servers.cgi](https://tf.nist.gov/tf-cgi/servers.cgi)\n3. NIST SP 800-53 Rev. 5: AU-3, AU-12",
+        "remediation_code": "Edit /etc/chrony/chrony.conf or a file ending in .sources in /etc/chrony/sources.d/ and add or edit server or pool lines as appropriate ...\n```\n<[server|pool]> <[remote-server|remote-pool]>\n```"
+    },
+    {
+        "name": "Ensure IPv6 status is identified",
+        "id": "3.1.1",
+        "type": "Manual",
+        "start_page": 348,
+        "end_page": 350,
+        "profiles": [
+            "level-1-server",
+            "level-1-workstation"
+        ],
+        "description": "Internet Protocol Version 6 (IPv6) is the most recent version of Internet Protocol (IP). It's designed to supply IP addressing and additional security to support the predicted growth of connected devices. IPv6 is based on 128-bit addressing and can support 340 undecillion, which is 340 trillion3 addresses.\n\nFeatures of IPv6\n\n  - Hierarchical addressing and routing infrastructure\n  - Stateful and Stateless configuration\n  - Support for quality of service (QoS)\n  - An ideal protocol for neighboring node interaction",
+        "rationale": "IETF RFC 4038 recommends that applications are built with an assumption of dual stack. It is recommended that IPv6 be enabled and configured in accordance with Benchmark recommendations.\n\n-IF- dual stack and IPv6 are not used in your environment, IPv6 may be disabled to reduce the attack surface of the system, and recommendations pertaining to IPv6 can be skipped.\n\nNote: It is recommended that IPv6 be enabled and configured unless this is against local site policy",
+        "audit_details": "Run the following to identify if IPv6 is enabled on the system:\n```\n# grep -Pqs '^\n0\\b' /sys/module/ipv6/parameters/disable && echo -e \"\\n IPv6 is enabled\\n\" || echo -e \"\\n - IPv6 is not enabled\\n\"\n```",
+        "audit_code": "# grep -Pqs '^\n0\\b' /sys/module/ipv6/parameters/disable && echo -e \"\\n IPv6 is enabled\\n\" || echo -e \"\\n - IPv6 is not enabled\\n\"",
+        "remediation_details": "Enable or disable IPv6 in accordance with system requirements and local site policy",
+        "remediation_code": "Enable or disable IPv6 in accordance with system requirements and local site policy."
+    },
+    {
+        "name": "Ensure ufw outbound connections are configured",
+        "id": "4.1.5",
+        "type": "Manual",
+        "start_page": 436,
+        "end_page": 437,
+        "profiles": [
+            "level-1-server",
+            "level-1-workstation"
+        ],
+        "description": "Configure the firewall rules for new outbound connections.",
+        "rationale": "If rules are not in place for new outbound connections all packets will be dropped by the default policy preventing network usage.",
+        "audit_details": "Run the following command and verify all rules for new outbound connections match site policy:\n\n```\n# ufw status numbered\n```\n\n",
+        "audit_code": "# ufw status numbered",
+        "remediation_details": "Configure ufw in accordance with site policy. The following commands will implement a policy to allow all outbound connections on all interfaces:\n\n```\n# ufw allow out on all\n```\n\n",
+        "remediation_code": "# ufw allow out on all"
+    },
+    {
+        "name": "Ensure iptables are flushed with nftables",
+        "id": "4.2.3",
+        "type": "Manual",
+        "start_page": 450,
+        "end_page": 451,
+        "profiles": [
+            "level-1-server",
+            "level-1-workstation"
+        ],
+        "description": "nftables is a replacement for iptables, ip6tables, ebtables and arptables",
+        "rationale": "It is possible to mix iptables and nftables. However, this increases complexity and also the chance to introduce errors. For simplicity flush out all iptables rules, and ensure it is not loaded",
+        "audit_details": "Run the following commands to ensure no iptables rules exist For iptables:\n```\n# iptables -L\n```\nNo rules should be returned For ip6tables:\n```\n# ip6tables -L\n```\nNo rules should be returned",
+        "audit_code": "# iptables -L\n# ip6tables -L",
+        "remediation_details": "Run the following commands to flush iptables: For iptables:\n```\n# iptables -F\n```\nFor ip6tables:\n```\n# ip6tables -F\n```\n",
+        "remediation_code": "# iptables -F\n# ip6tables -F"
+    },
+    {
+        "name": "Ensure nftables outbound and established connections are configured",
+        "id": "4.2.7",
+        "type": "Manual",
+        "start_page": 458,
+        "end_page": 460,
+        "profiles": [
+            "level-1-server",
+            "level-1-workstation"
+        ],
+        "description": "Configure the firewall rules for new outbound, and established connections",
+        "rationale": "If rules are not in place for new outbound, and established connections all packets will be dropped by the default policy preventing network usage.",
+        "audit_details": "Run the following commands and verify all rules for established incoming connections match site policy: site policy:\n```\n# nft list ruleset | awk '/hook input/,/}/' | grep -E 'ip protocol (tcp|udp|icmp) ct state'\n```\nOutput should be similar to:\n```\nip protocol tcp ct state established accept\nip protocol udp ct state established accept\nip protocol icmp ct state established accept\n```\nRun the following command and verify all rules for new and established outbound connections match site policy:\n```\n# nft list ruleset | awk '/hook output/,/}/' | grep -E 'ip protocol (tcp|udp|icmp) ct state'\n```\nOutput should be similar to:\n```\nip protocol tcp ct state established,related,new accept\nip protocol udp ct state established,related,new accept\nip protocol icmp ct state established,related,new accept\n```",
+        "audit_code": "# nft list ruleset | awk '/hook input/,/}/' | grep -E 'ip protocol (tcp|udp|icmp) ct state'\n# nft list ruleset | awk '/hook output/,/}/' | grep -E 'ip protocol (tcp|udp|icmp) ct state'",
+        "remediation_details": "Configure nftables in accordance with site policy. The following commands will implement a policy to allow all outbound connections and all established connections:\n```\n# nft add rule inet filter input ip protocol tcp ct state established accept\n# nft add rule inet filter input ip protocol udp ct state established accept\n# nft add rule inet filter input ip protocol icmp ct state established accept\n# nft add rule inet filter output ip protocol tcp ct state new,related,established accept\n# nft add rule inet filter output ip protocol udp ct state new,related,established accept\n# nft add rule inet filter output ip protocol icmp ct state new,related,established accept\n```",
+        "remediation_code": "# nft add rule inet filter input ip protocol tcp ct state established accept\n# nft add rule inet filter input ip protocol udp ct state established accept\n# nft add rule inet filter input ip protocol icmp ct state established accept\n# nft add rule inet filter output ip protocol tcp ct state new,related,established accept\n# nft add rule inet filter output ip protocol udp ct state new,related,established accept\n# nft add rule inet filter output ip protocol icmp ct state new,related,established accept"
+    },
+    {
+        "name": "Ensure iptables outbound and established connections are configured",
+        "id": "4.3.2.3",
+        "type": "Manual",
+        "start_page": 482,
+        "end_page": 483,
+        "profiles": [
+            "level-1-server",
+            "level-1-workstation"
+        ],
+        "description": "Configure the firewall rules for new outbound, and established connections.",
+        "rationale": "If rules are not in place for new outbound, and established connections all packets will be dropped by the default policy preventing network usage.",
+        "audit_details": "Run the following command and verify all rules for new outbound, and established connections match site policy:\n\n```\n# iptables -L -v -n\n```\n",
+        "audit_code": "# iptables -L -v -n",
+        "remediation_details": "Configure iptables in accordance with site policy. The following commands will implement a policy to allow all outbound connections and all established connections:\n```\n# iptables -A OUTPUT -p tcp -m state --state NEW,ESTABLISHED -j ACCEPT\n# iptables -A OUTPUT -p udp -m state --state NEW,ESTABLISHED -j ACCEPT\n# iptables -A OUTPUT -p icmp -m state --state NEW,ESTABLISHED -j ACCEPT\n# iptables -A INPUT -p tcp -m state --state ESTABLISHED -j ACCEPT\n# iptables -A INPUT -p udp -m state --state ESTABLISHED -j ACCEPT\n# iptables -A INPUT -p icmp -m state --state ESTABLISHED -j ACCEPT\n```",
+        "remediation_code": "# iptables -A OUTPUT -p tcp -m state --state NEW,ESTABLISHED -j ACCEPT\n# iptables -A OUTPUT -p udp -m state --state NEW,ESTABLISHED -j ACCEPT\n# iptables -A OUTPUT -p icmp -m state --state NEW,ESTABLISHED -j ACCEPT\n# iptables -A INPUT -p tcp -m state --state ESTABLISHED -j ACCEPT\n# iptables -A INPUT -p udp -m state --state ESTABLISHED -j ACCEPT\n# iptables -A INPUT -p icmp -m state --state ESTABLISHED -j ACCEPT"
+    },
+    {
+        "name": "Ensure ip6tables outbound and established connections are configured",
+        "id": "4.3.3.3",
+        "type": "Manual",
+        "start_page": 494,
+        "end_page": 495,
+        "profiles": [
+            "level-1-server",
+            "level-1-workstation"
+        ],
+        "description": "Configure the firewall rules for new outbound, and established IPv6 connections. Note: Changing firewall settings while connected over network can result in being locked out of the system. Remediation will only affect the active system firewall, be sure to configure the default policy in your firewall management to apply on boot as well.",
+        "rationale": "If rules are not in place for new outbound, and established connections all packets will be dropped by the default policy preventing network usage.",
+        "audit_details": "Run the following command and verify all rules for new outbound, and established connections match site policy:\n\n# ip6tables -L -v -n\n\n-OR-\nVerify IPv6 is disabled:_\nRun the following script. Output will confirm if IPv6 is enabled on the system.\n```\n#!/usr/bin/bash\n{\n  if grep -Pqs '^\\h*0\\b' /sys/module/ipv6/parameters/disable; then\n   echo -e \" - IPv6 is enabled on the system\"\n  else\n   echo -e \" - IPv6 is not enabled on the system\"\n  fi\n}\n```\n",
+        "audit_code": "# ip6tables -L -v -n\n\n#!/usr/bin/bash\n{\n  if grep -Pqs '^\\h*0\\b' /sys/module/ipv6/parameters/disable; then\n   echo -e \" - IPv6 is enabled on the system\"\n  else\n   echo -e \" - IPv6 is not enabled on the system\"\n  fi\n}",
+        "remediation_details": "Configure iptables in accordance with site policy. The following commands will implement a policy to allow all outbound connections and all established connections:\n```\n# ip6tables -A OUTPUT -p tcp -m state --state NEW,ESTABLISHED -j ACCEPT\n# ip6tables -A OUTPUT -p udp -m state --state NEW,ESTABLISHED -j ACCEPT\n# ip6tables -A OUTPUT -p icmp -m state --state NEW,ESTABLISHED -j ACCEPT\n# ip6tables -A INPUT -p tcp -m state --state ESTABLISHED -j ACCEPT\n# ip6tables -A INPUT -p udp -m state --state ESTABLISHED -j ACCEPT\n# ip6tables -A INPUT -p icmp -m state --state ESTABLISHED -j ACCEPT\n```\n",
+        "remediation_code": "# ip6tables -A OUTPUT -p tcp -m state --state NEW,ESTABLISHED -j ACCEPT\n# ip6tables -A OUTPUT -p udp -m state --state NEW,ESTABLISHED -j ACCEPT\n# ip6tables -A OUTPUT -p icmp -m state --state NEW,ESTABLISHED -j ACCEPT\n# ip6tables -A INPUT -p tcp -m state --state ESTABLISHED -j ACCEPT\n# ip6tables -A INPUT -p udp -m state --state ESTABLISHED -j ACCEPT\n# ip6tables -A INPUT -p icmp -m state --state ESTABLISHED -j ACCEPT\n"
+    },
+    {
+        "name": "Ensure password complexity is configured",
+        "id": "5.3.3.2.3",
+        "type": "Manual",
+        "start_page": 610,
+        "end_page": 613,
+        "profiles": [
+            "level-1-server",
+            "level-1-workstation"
+        ],
+        "description": "Password complexity can be set through:\n\n  - `minclass - The minimum number of classes of characters required in a new` password. (digits, uppercase, lowercase, others). e.g. minclass = 4 requires digits, uppercase, lower case, and special characters.\n\n  - `dcredit - The maximum credit for having digits in the new password. If less than` 0 it is the minimum number of digits in the new password. e.g. dcredit = -1 requires at least one digit\n\n  - `ucredit - The maximum credit for having uppercase characters in the new` password. If less than 0 it is the minimum number of uppercase characters in the new password. e.g. ucredit = -1 requires at least one uppercase character\n\n  - `ocredit - The maximum credit for having other characters in the new password.` If less than 0 it is the minimum number of other characters in the new password. e.g. ocredit = -1 requires at least one special character\n\n  - `lcredit - The maximum credit for having lowercase characters in the new` password. If less than 0 it is the minimum number of lowercase characters in the new password. e.g. lcredit = -1 requires at least one lowercase character",
+        "rationale": "Strong passwords protect systems from being hacked through brute force methods.\n\nRequiring at least one non-alphabetic character increases the search space beyond pure dictionary words, which makes the resulting password harder to crack.\n\nForcing users to choose an excessively complex password, e.g. some combination of upper-case, lower-case, numbers, and special characters, has a negative impact. It places an extra burden on users and many will use predictable patterns (for example, a capital letter in the first position, followed by lowercase letters, then one or two numbers, and a \u201cspecial character\u201d at the end). Attackers know this, so dictionary attacks will often contain these common patterns and use the most common substitutions like, $ for s, @ for a, 1 for l, 0 for o.",
+        "audit_details": "Run the following command to verify:\n\n  - `dcredit, ucredit, lcredit, and ocredit are not set to a value greater than 0`\n\n  - Complexity conforms to local site policy:\n```\n# grep -Psi -- '^\\\\h*(minclass|[dulo]credit)\\b' /etc/security/pwquality.conf /etc/security/pwquality.conf.d/*.conf\n```\n_Example output:_\n```\n/etc/security/pwquality.conf.d/50-pwcomplexity.conf:minclass = 3\n/etc/security/pwquality.conf.d/50-pwcomplexity.conf:ucredit = -2\n/etc/security/pwquality.conf.d/50-pwcomplexity.conf:lcredit = -2\n/etc/security/pwquality.conf.d/50-pwcomplexity.conf:dcredit = -1\n/etc/security/pwquality.conf.d/50-pwcomplexity.conf:ocredit = 0\n```\nThe example represents a requirement of three character classes, with passwords requiring two upper case, two lower case, and one numeric character.\nRun the following command to verify that module arguments in the configuration file(s) are not being overridden by arguments in /etc/pam.d/common-password:\n```\ngrep -Psi -'^\\\\h*password\\h+(requisite|required|sufficient)\\h+pam_pwquality\\.so\\h+([^#\\n\\r]+\\h+)?(minclass=\\d*|[dulo]credit=-?\\d*)\\b' /etc/pam.d/common-password\nNothing should be returned\n```\n**Note:**\n\n  - settings should be configured in only one location for clarity\n\n  - Settings observe an order of precedence:\n`o` module arguments override the settings in the `/etc/security/pwquality.conf configuration file`\n\n`o` settings in the /etc/security/pwquality.conf configuration file override settings in a .conf file in the /etc/security/pwquality.conf.d/ directory\n\n`o` settings in a .conf file in the /etc/security/pwquality.conf.d/ directory are read in canonical order, with last read file containing the setting taking precedence\n\n  - It is recommended that settings be configured in a .conf file in the /etc/security/pwquality.conf.d/ directory for clarity, convenience, and durability.",
+        "audit_code": "# grep -Psi -- '^\\\\h*(minclass|[dulo]credit)\\b' /etc/security/pwquality.conf /etc/security/pwquality.conf.d/*.conf\n# grep -Psi -'^\\\\h*password\\h+(requisite|required|sufficient)\\h+pam_pwquality\\.so\\h+([^#\\n\\r]+\\h+)?(minclass=\\d*|[dulo]credit=-?\\d*)\\b' /etc/pam.d/common-password",
+        "remediation_details": "Run the following command:\n```\n# grep -Pl -'\\bpam_pwquality\\.so\\h+([^#\\n\\r]+\\h+)?(minclass|[dulo]credit)\\b' /usr/share/pam-configs/*\n```\nEdit any returned files and remove the minclass, dcredit, ucredit, lcredit, and ocredit arguments from the pam_pwquality.so line(s)\n\nCreate or modify a file ending in .conf in the /etc/security/pwquality.conf.d/ directory or the file /etc/security/pwquality.conf and add or modify the following line(s) to set complexity according to local site policy:\n\n  - `minclass = _N_`\n\n  - `dcredit = _N_ # Value should be either 0 or a number proceeded by a minus (-)` symbol\n\n  - `ucredit = -1 # Value should be either 0 or a number proceeded by a minus (-)` symbol\n\n  - `ocredit = -1 # Value should be either 0 or a number proceeded by a minus (-)` symbol\n\n  - `lcredit = -1 # Value should be either 0 or a number proceeded by a minus (-)` symbol\n\n_Example 1 - Set minclass = 3:_\n```\n#!/usr/bin/env bash\n{\n  sed -ri 's/^\\s*minclass\\s*=/# &/' /etc/security/pwquality.conf\n  sed -ri 's/^\\s*[dulo]credit\\s*=/# &/' /etc/security/pwquality.conf\n  [ ! -d /etc/security/pwquality.conf.d/ ] && mkdir /etc/security/pwquality.conf.d/\n  printf '\\n%s' \"minclass = 3\" > /etc/security/pwquality.conf.d/50pwcomplexity.conf\n}\n```\n_Example 2 - set dcredit = -1, ucredit = -1, and lcredit = -1:_\n```\n#!/usr/bin/env bash\n{\n  sed -ri 's/^\\s*minclass\\s*=/# &/' /etc/security/pwquality.conf\n  sed -ri 's/^\\s*[dulo]credit\\s*=/# &/' /etc/security/pwquality.conf\n  [ ! -d /etc/security/pwquality.conf.d/ ] && mkdir /etc/security/pwquality.conf.d/\n  printf '%s\\n' \"dcredit = -1\" \"ucredit = -1\" \"lcredit = -1\" > /etc/security/pwquality.conf.d/50-pwcomplexity.conf\n}\n",
+        "remediation_code": "# grep -Pl -'\\bpam_pwquality\\.so\\h+([^#\\n\\r]+\\h+)?(minclass|[dulo]credit)\\b' /usr/share/pam-configs/*\n# sed -ri 's/^\\s*minclass\\s*=/# &/' /etc/security/pwquality.conf\n# sed -ri 's/^\\s*[dulo]credit\\s*=/# &/' /etc/security/pwquality.conf"
+    },
+    {
+        "name": "Ensure minimum password age is configured",
+        "id": "5.4.1.2",
+        "type": "Manual",
+        "start_page": 658,
+        "end_page": 660,
+        "profiles": [
+            "level-2-server",
+            "level-2-workstation"
+        ],
+        "description": "The minimum password age determines the number of days that you must use a password before you can change it.\n```\nPASS_MIN_DAYS <N> - The minimum number of days allowed between password\n```\nchanges. Any password changes attempted sooner than this will be rejected. If not specified, 0 will be assumed (which disables the restriction).",
+        "rationale": "Users may have favorite passwords that they like to use because they are easy to remember and they believe that their password choice is secure from compromise. Unfortunately, passwords are compromised and if an attacker is targeting a specific individual user account, with foreknowledge of data about that user, reuse of old, potentially compromised passwords, may cause a security breach.\n\nBy restricting the frequency of password changes, an administrator can prevent users from repeatedly changing their password in an attempt to circumvent password reuse controls",
+        "audit_details": "Run the following command to verify that PASS_MIN_AGE is set to a value greater than \n```\n0and follows local site policy:\n```\n```\n# grep -Pi -- '^\n\\h*PASS_MIN_DAYS\\h+\\d+\\b' /etc/login.defs\n```\n\n_Example output:_\n```\nPASS_MIN_DAYS  1\n```\n\nRun the following command to verify all passwords have a PASS_MIN_AGE greater than 0:\n```\n# awk -F: '($2~/^\\$.+\\$/) {if($4 < 1)print \"User: \" $1 \" PASS_MIN_DAYS: \" $4}' /etc/shadow\n```\nNothing should be returned",
+        "audit_code": "# grep -Pi -- '^\n\\h*PASS_MIN_DAYS\\h+\\d+\\b' /etc/login.defs\n# awk -F: '($2~/^\\$.+\\$/) {if($4 < 1)print \"User: \" $1 \" PASS_MIN_DAYS: \" $4}' /etc/shadow",
+        "remediation_details": "Edit /etc/login.defs and set PASS_MIN_DAYS to a value greater than 0 that follows local site policy:\n_Example:_\n```\nPASS_MIN_DAYS 1\n```\n\nRun the following command to modify user parameters for all users with a password set to a minimum age greater than zero that follows local site policy:\n```\n# chage --mindays <N> <user>\n```\n_Example:_\n```\n# awk -F: '($2~/^\\$.+\\$/) {if($4 < 1)system (\"chage --mindays 1 \" $1)}' /etc/shadow\n```\n",
+        "remediation_code": "# chage --mindays <N> <user>\n# awk -F: '($2~/^\\$.+\\$/) {if($4 < 1)system (\"chage --mindays 1 \" $1)}' /etc/shadow"
+    },
+    {
+        "name": "Ensure journald log file access is configured",
+        "id": "6.2.1.1.2",
+        "type": "Manual",
+        "start_page": 718,
+        "end_page": 719,
+        "profiles": [
+            "level-1-server",
+            "level-1-workstation"
+        ],
+        "description": "Journald will create logfiles that do not already exist on the system. This setting controls what permissions will be applied to these newly created files.",
+        "rationale": "It is important to ensure that log files have the correct permissions to ensure that sensitive data is archived and protected.",
+        "audit_details": "First determine if there is an override file /etc/tmpfiles.d/systemd.conf. If so, this file will override all default settings as defined in /usr/lib/tmpfiles.d/systemd.conf and should be inspected. If no override file exists, inspect the default /usr/lib/tmpfiles.d/systemd.conf against the site specific requirements. Ensure that file permissions are mode 0640 or more restrictive.",
+        "audit_code": "",
+        "remediation_details": "If the default configuration is not appropriate for the site specific requirements, copy /usr/lib/tmpfiles.d/systemd.conf to /etc/tmpfiles.d/systemd.conf and modify as required. Requirements is either 0640 or site policy if that is less restrictive.",
+        "remediation_code": ""
+    },
+    {
+        "name": "Ensure journald log file rotation is configured",
+        "id": "6.2.1.1.3",
+        "type": "Manual",
+        "start_page": 720,
+        "end_page": 721,
+        "profiles": [
+            "level-1-server",
+            "level-1-workstation"
+        ],
+        "description": "Journald includes the capability of rotating log files regularly to avoid filling up the system with logs or making the logs unmanageably large. The file /etc/systemd/journald.conf is the configuration file used to specify how logs generated by Journald should be rotated.",
+        "rationale": "By keeping the log files smaller and more manageable, a system administrator can easily archive these files to another system and spend less time looking through inordinately large log files.",
+        "audit_details": "Review /etc/systemd/journald.conf and files in the /etc/systemd/journald.conf.d/ directory ending in .conf. Verify logs are rotated according to site policy. The specific parameters for log rotation are:\nSystemMaxUse=\nSystemKeepFree=\nRuntimeMaxUse=\nRuntimeKeepFree=\nMaxFileSec=",
+        "audit_code": "",
+        "remediation_details": "Edit /etc/systemd/journald.conf or a file ending in .conf in the /etc/systemd/journald.conf.d/ directory. Set the following parameters in the [Journal] section to ensure logs are rotated according to site policy. The settings should be carefully understood as there are specific edge cases and prioritization of parameters. The specific parameters for log rotation are:\nSystemMaxUse=\nSystemKeepFree=\nRuntimeMaxUse=\nRuntimeKeepFree=\nMaxFileSec=",
+        "remediation_code": ""
+    },
+    {
+        "name": "Ensure systemd-journal-remote authentication is configured",
+        "id": "6.2.1.2.2",
+        "type": "Manual",
+        "start_page": 737,
+        "end_page": 738,
+        "profiles": [
+            "level-1-server",
+            "level-1-workstation"
+        ],
+        "description": "Journald systemd-journal-upload supports the ability to send log events it gathers to a remote log host.",
+        "rationale": "Storing log data on a remote host protects log integrity from local attacks. If an attacker gains root access on the local system, they could tamper with or remove log data that is stored on the local system.",
+        "audit_details": "Run the following command to verify systemd-journal-upload authentication is configured:\n```\n# grep -P \"^ *URL=|^ *ServerKeyFile=|^ *ServerCertificateFile=|^ *TrustedCertificateFile=\" /etc/systemd/journal-upload.conf\n```\nVerify the output matches per your environments certificate locations and the URL of the log server:\n_Example:_\n```\n[Upload]\nURL=192.168.50.42\nServerKeyFile=/etc/ssl/private/journal-upload.pem\nServerCertificateFile=/etc/ssl/certs/journal-upload.pem\nTrustedCertificateFile=/etc/ssl/ca/trusted.pem\n```\nPage 736",
+        "audit_code": "# grep -P \"^ *URL=|^ *ServerKeyFile=|^ *ServerCertificateFile=|^ *TrustedCertificateFile=\" /etc/systemd/journal-upload.conf",
+        "remediation_details": "Edit the /etc/systemd/journal-upload.conf file or a file in /etc/systemd/journal-upload.conf.d ending in .conf and ensure the following lines are set in the [Upload] section per your environment:\n```\n[Upload]\nURL=192.168.50.42\nServerKeyFile=/etc/ssl/private/journal-upload.pem\nServerCertificateFile=/etc/ssl/certs/journal-upload.pem\nTrustedCertificateFile=/etc/ssl/ca/trusted.pem\n```\nRestart the service:\n```\n# systemctl restart systemd-journal-upload\n```\n**References:**\n1. NIST SP 800-53 Rev. 5: AU-2, AU-12",
+        "remediation_code": "# systemctl restart systemd-journal-upload"
+    },
+    {
+        "name": "Ensure the running and on disk configuration is the same",
+        "id": "6.3.3.21",
+        "type": "Manual",
+        "start_page": 850,
+        "end_page": 851,
+        "profiles": [
+            "level-2-server",
+            "level-2-workstation"
+        ],
+        "description": "The Audit system have both on disk and running configuration. It is possible for these configuration settings to differ.\n\n**Note: Due to the limitations of augenrules and auditctl, it is not absolutely guaranteed** that loading the rule sets via augenrules --load will result in all rules being loaded or even that the user will be informed if there was a problem loading the rules.",
+        "rationale": "Configuration differences between what is currently running and what is on disk could cause unexpected problems or may give a false impression of compliance requirements.",
+        "audit_details": "**Merged rule sets** Ensure that all rules in /etc/audit/rules.d have been merged into\n/etc/audit/audit.rules:\n# augenrules --check\n/usr/sbin/augenrules: No change\n\nShould there be any drift, run augenrules --load to merge and load all rules.",
+        "audit_code": "# augenrules --check\n/usr/sbin/augenrules: No change",
+        "remediation_details": "If the rules are not aligned across all three () areas, run the following command to merge and load all rules:",
+        "remediation_code": "# augenrules --load\n\nCheck if reboot is required.\nif [[ $(auditctl -s | grep \"enabled\") =~ \"2\" ]]; then echo \"Reboot required to load rules\"; fi"
+    },
+    {
+        "name": "Ensure SUID and SGID files are reviewed",
+        "id": "7.1.13",
+        "type": "Manual",
+        "start_page": 906,
+        "end_page": 908,
+        "profiles": [
+            "level-1-server",
+            "level-1-workstation"
+        ],
+        "description": "The owner of a file can set the file's permissions to run with the owner's or group's permissions, even if the user running the program is not the owner or a member of the group. The most common reason for a SUID or SGID program is to enable users to perform functions (such as changing their password) that require root privileges.",
+        "rationale": "There are valid reasons for SUID and SGID programs, but it is important to identify and review such programs to ensure they are legitimate. Review the files returned by the action in the audit section and check to see if system binaries have a different checksum than what from the package. This is an indication that the binary may have been replaced.",
+        "audit_details": "Run the following script to generate a list of SUID and SGID files:\n```\n#!/usr/bin/env bash\n{\n  l_output=\"\" l_output2=\"\"\n  a_suid=(); a_sgid=() # initialize arrays\n  while IFS= read -r l_mount_point; do\n   if ! grep -Pqs '^\n*\\/run\\/usr\\b' <<< \"$l_mount_point\" && ! grep -Pqs - '\\bnoexec\\b' <<< \"$(findmnt -krn \"$l_mount_point\")\"; then\n     while IFS= read -r -d $'\\0' l_file; do\n      if [ -e \"$l_file\" ]; then\n        l_mode=\"$(stat -Lc '%#a' \"$l_file\")\"\n        [ $(( $l_mode & 04000 )) -gt 0 ] && a_suid+=(\"$l_file\")\n        [ $(( $l_mode & 02000 )) -gt 0 ] && a_sgid+=(\"$l_file\")\n      fi\n     done < <(find \"$l_mount_point\" -xdev -type f \\( -perm -2000 -o -perm\n-4000 \\) -print0 2>/dev/null)\n   fi\n  done <<< \"$(findmnt -Derno target)\"\n  if ! (( ${#a_suid[@]} > 0 )); then\n   l_output=\"$l_output\\n - No executable SUID files exist on the system\"\n  else\n   l_output2=\"$l_output2\\n - List of \\\"$(printf '%s' \"${#a_suid[@]}\")\\\"\nSUID executable files:\\n$(printf '%s\\n' \"${a_suid[@]}\")\\n - end of list -\\n\"\n  fi\n  if ! (( ${#a_sgid[@]} > 0 )); then\n   l_output=\"$l_output\\n - There are no SGID files exist on the system\"\n  else\n   l_output2=\"$l_output2\\n - List of \\\"$(printf '%s' \"${#a_sgid[@]}\")\\\"\nSGID executable files:\\n$(printf '%s\\n' \"${a_sgid[@]}\")\\n - end of list -\\n\"\n  fi\n  [ -n \"$l_output2\" ] && l_output2=\"$l_output2\\n- Review the preceding\nlist(s) of SUID and/or SGID files to\\n- ensure that no rogue programs have\nbeen introduced onto the system.\\n\" \n  unset a_arr; unset a_suid; unset a_sgid # Remove arrays\n  # If l_output2 is empty, Nothing to report\n  if [ -z \"$l_output2\" ]; then\n   echo -e \"\\n- Audit Result:\\n$l_output\\n\"\n  else\n   echo -e \"\\n- Audit Result:\\n$l_output2\\n\"\n   [ -n \"$l_output\" ] && echo -e \"$l_output\\n\"\n  fi\n}\n```\nNote: on systems with a large number of files, this may be a long running process",
+        "audit_code": "#!/usr/bin/env bash\n{\n  l_output=\"\" l_output2=\"\"\n  a_suid=(); a_sgid=() # initialize arrays\n  while IFS= read -r l_mount_point; do\n   if ! grep -Pqs '^\n*\\/run\\/usr\\b' <<< \"$l_mount_point\" && ! grep -Pqs - '\\bnoexec\\b' <<< \"$(findmnt -krn \"$l_mount_point\")\"; then\n     while IFS= read -r -d $'\\0' l_file; do\n      if [ -e \"$l_file\" ]; then\n        l_mode=\"$(stat -Lc '%#a' \"$l_file\")\"\n        [ $(( $l_mode & 04000 )) -gt 0 ] && a_suid+=(\"$l_file\")\n        [ $(( $l_mode & 02000 )) -gt 0 ] && a_sgid+=(\"$l_file\")\n      fi\n     done < <(find \"$l_mount_point\" -xdev -type f \\( -perm -2000 -o -perm\n-4000 \\) -print0 2>/dev/null)\n   fi\n  done <<< \"$(findmnt -Derno target)\"\n  if ! (( ${#a_suid[@]} > 0 )); then\n   l_output=\"$l_output\\n - No executable SUID files exist on the system\"\n  else\n   l_output2=\"$l_output2\\n - List of \\\"$(printf '%s' \"${#a_suid[@]}\")\\\"\nSUID executable files:\\n$(printf '%s\\n' \"${a_suid[@]}\")\\n - end of list -\\n\"\n  fi\n  if ! (( ${#a_sgid[@]} > 0 )); then\n   l_output=\"$l_output\\n - There are no SGID files exist on the system\"\n  else\n   l_output2=\"$l_output2\\n - List of \\\"$(printf '%s' \"${#a_sgid[@]}\")\\\"\nSGID executable files:\\n$(printf '%s\\n' \"${a_sgid[@]}\")\\n - end of list -\\n\"\n  fi\n  [ -n \"$l_output2\" ] && l_output2=\"$l_output2\\n- Review the preceding\nlist(s) of SUID and/or SGID files to\\n- ensure that no rogue programs have\nbeen introduced onto the system.\\n\" \n  unset a_arr; unset a_suid; unset a_sgid # Remove arrays\n  # If l_output2 is empty, Nothing to report\n  if [ -z \"$l_output2\" ]; then\n   echo -e \"\\n- Audit Result:\\n$l_output\\n\"\n  else\n   echo -e \"\\n- Audit Result:\\n$l_output2\\n\"\n   [ -n \"$l_output\" ] && echo -e \"$l_output\\n\"\n  fi\n}",
+        "remediation_details": "Ensure that no rogue SUID or SGID programs have been introduced into the system. Review the files returned by the action in the Audit section and confirm the integrity of these binaries.",
+        "remediation_code": ""
+    }
+]
