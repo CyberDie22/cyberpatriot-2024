@@ -8,7 +8,9 @@ import re
 import subprocess
 from tabnanny import check
 from types import ModuleType
-from typing import Literal
+from typing import Literal, Optional
+
+from tqdm import tqdm
 
 OS = Literal['windows', 'linux']
 
@@ -47,7 +49,7 @@ def detect_distros(operating_system: OS) -> list[str]:
     return ['unknown']
 
 
-def import_string_as_module(code_string: str, module_name: str) -> ModuleType:
+def import_string_as_module(code_string: str, module_name: str) -> Optional[ModuleType]:
     """
     Import a string containing Python code as a module.
 
@@ -81,8 +83,13 @@ def import_string_as_module(code_string: str, module_name: str) -> ModuleType:
     # Add the module to sys.modules
     sys.modules[module_name] = module
 
-    # Execute the code string in the module's context
-    exec(code_string, module.__dict__)
+    try:
+        # Execute the code string in the module's context
+        exec(code_string, module.__dict__)
+    except Exception as e:
+        print(f"Error importing code as module: {str(e)}")
+        del sys.modules[module_name]
+        return None
 
     return module
 
@@ -135,27 +142,49 @@ def main() -> int:
     distros_to_process.reverse()
 
     distro_files = {
-        'ubuntu': 'files/benchmarks/ubuntu/CIS_Ubuntu_Linux_22.04_LTS_Benchmark_v2.0.0/CIS_Ubuntu_Linux_22.04_LTS_Benchmark_v2.0.0.svulns.json',
-        'debian': 'files/benchmarks/debian/CIS_Debian_Linux_11_Benchmark_v2.0.0/CIS_Debian_Linux_11_Benchmark_v2.0.0.svulns.json',
+        'ubuntu': 'files/benchmarks/ubuntu/CIS_Ubuntu_Linux_22.04_LTS_Benchmark_v2.0.0/CIS_Ubuntu_Linux_22.04_LTS_Benchmark_v2.0.0.svulns_old_old.json',
+        # 'debian': 'files/benchmarks/debian/CIS_Debian_Linux_11_Benchmark_v2.0.0/CIS_Debian_Linux_11_Benchmark_v2.0.0.svulns.json',
     }
+
+    needs_manual_intervention = []
+    exception_failed = []
 
     for distro in distros_to_process:
         if distro in distro_files:
             distro_json = json.loads(pathlib.Path(distro_files[distro]).read_text())
-            distro_json = [v for v in distro_json if "level-1-workstation" in distro_json['profiles']]
-            for item in distro_json:
-                print(f"Checking vuln {item['id']} {item['name']}")
-                item_module = import_string_as_module(item['python_script'], 'distro_item_module')
-                if item_module.audit_vuln():
-                    print("Vuln doesn't exist on the system")
-                else:
-                    print("Remediating vuln")
-                    item_module.remediate_vuln()
-                    if not item_module.audit_vuln():
-                        print("Failed to remediate vuln, may require manual intervention")
-                unload_module('distro_item_module')
+            distro_json = [v for v in distro_json if "level-1-workstation" in v['profiles']]
+            for item in tqdm(distro_json, desc="Checking vulns"):
+                try:
+                    print(f"\nChecking vuln {item['id']} {item['name']}")
+                    if item['python_script'] == "":
+                        continue
+                    item_module = import_string_as_module(item['python_script'], 'distro_item_module')
+                    if not item_module:
+                        continue
+                    if item_module.audit_vuln():
+                        print("Vuln doesn't exist on the system")
+                    else:
+                        print("Remediating vuln")
+                        item_module.remediate_vuln()
+                        if not item_module.audit_vuln():
+                            print("Failed to remediate vuln, may require manual intervention")
+                            needs_manual_intervention.append(item['id'])
+                    unload_module('distro_item_module')
+                except Exception as e:
+                    print(f"Error processing vuln {item['id']}: {str(e)}")
+                    exception_failed.append({'id': item['id'], 'exception': str(e)})
         else:
             print(f"Distro `{distro}` doesn't exist.")
+
+    print("These vulns require manual intervention:")
+    for vuln in needs_manual_intervention:
+        print(vuln)
+
+    print("These vulns failed:")
+    for vuln in exception_failed:
+        print(vuln['id'])
+        print(vuln['exception'])
+        print("\n\n")
 
     return 0
 
